@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>搜索引擎</title>
+    <link rel="stylesheet" href="../css/index.css">
+    <script src="../js/index.js"></script>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="title">
+            <h1 class="text">搜索引擎</h1>
+        </div>
+        <div class="inputwrapper">
+            <div class="input">
+                <form id="form" action="/search", method="get">
+                    <span class="i">
+                        <input id="input" name="keyword" type="text" autocomplete="off">
+                    </span>
+                    <span class="b">
+                        <input id="submit" type="submit" value="搜索一下" onclick="test()">
+                    </span>
+                </form>
+            </div>
+            <div id="test"></div>
+        </div>
+    </div>
+</body>
+</html>
