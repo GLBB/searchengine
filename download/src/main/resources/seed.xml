@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<seeds>
+    <seed>
+        <site>https://www.csdn.net/</site>
+    </seed>
+
+    <seed>
+        <site>http://www.importnew.com/</site>
+    </seed>
+
+    <seed>
+        <site>http://ifeve.com/</site>
+    </seed>
+
+    <seed>
+        <site>http://www.w3school.com.cn/</site>
+    </seed>
+
+    <seed>
+        <site>http://www.runoob.com/</site>
+    </seed>
+
+    <seed>
+        <site>https://developer.ibm.com/cn/</site>
+    </seed>
+
+    <seed>
+        <site>https://www.cnblogs.com/</site>
+    </seed>
+</seeds>

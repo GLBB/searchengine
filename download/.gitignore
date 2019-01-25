@@ -1,0 +1,12 @@
+.idea
+.mvn
+backup
+html_repo
+sitemap
+target
+mvnw*
+*.iml
+xici
+exception.txt
+searchengine.iml
+searchengine.rar

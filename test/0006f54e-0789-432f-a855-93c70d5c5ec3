@@ -1,0 +1,171 @@
+:0
+ :0
+  :0
+   :0
+     :0
+   :0
+   :0
+   :0
+    :0
+     :0
+     [image] :7
+      :0
+     暖风 :2
+     全栈架构 :4
+    :0
+     :0
+     :0
+      :0
+      博客园 :3
+      首页 :2
+      新随笔 :3
+      联系 :2
+      订阅 :2
+        :0
+      管理 :2
+      :0
+      :0
+       :0
+       随笔 - 122&nbsp;  :14
+       文章 - 72&nbsp;  :13
+       评论 - 115 :8
+       :0
+     :0
+      :0
+    :0
+     :0
+   :0
+    :0
+    :0
+     :0
+      :0
+       :0
+        :0
+        :0
+         :0
+          HtmlWebpackPlugin实现资源的自定义插入  :27
+          :0
+          :0
+          :0
+           目前碰到的问题 :7
+           我们用html-webpack-plugin的inject属性去自动插入打包后的js, css到页面中，但是如果想给script标签添加一个crossorigin属性呢， :85
+           例如： :3
+            :0
+            &lt;script type="text/javascript" src="/static/js/debug.f04ad197.js"&gt;&lt;/script&gt; :87
+            :0
+           想改为： :4
+            :0
+            &lt;script crossorigin="anonymous" type="text/javascript" src="/static/js/debug.f04ad197.js"&gt;&lt;/script&gt; :111
+            :0
+           或者相对css做一个内联，这些都无法通过html-webpack-plugin直接配置生成 :45
+           &nbsp; :6
+           解决问题 :4
+           查看webpack的一些文档资料，发现在issue中其实也有人提到，https://github.com/jantimon/html-webpack-plugin/issues/157 :92
+           是一个内联的问题，然而插件作者只提供了html-webpack-plugin的响应事件： :44
+            :0
+            html-webpack-plugin-before-html-processing:42
+html-webpack-plugin-after-html-processing:41
+html-webpack-plugin-after-emit :30
+            :0
+           顺着找到了这个插件： :10
+           [image] :7
+           https://github.com/lcxfs1991/blog/issues/2&nbsp; :48
+           [image] :7
+           插件：html-res-webpack-plugin :26
+           通过这个插件，可以实现资源的自定义插入 :19
+           https://github.com/lcxfs1991/html-res-webpack-plugin/blob/v3/README_ZH.md :73
+           最终实现 :4
+            :0
+            let chunks = {};:16
+chunks['vendor.js'] = {:23
+  attr: "crossorigin=\"anonymous\"" // attributes for js file in index chunk:74
+}:1
+chunks['index.js'] = {:22
+  attr: "crossorigin=\"anonymous\"" // attributes for js file in index chunk:74
+}:1
+chunks['index.css'] = {} result.push( new HtmlResWebpackPlugin({ filename: path + name + '.njk', template: template, chunks: chunks }) ) :136
+            :0
+           最终效果： :5
+           [image]:7
+          :0
+           :0
+           :0
+           :0
+            :0
+            :0
+            :0
+            :0
+            :0
+            :0
+           :0
+          :0
+         :0
+          posted @ :8
+          2018-01-15 17:27 :16
+          暖风叔叔 阅读(:8
+          ...) 评论(:8
+          ...) :4
+          编辑 :2
+          收藏:2
+          :0
+          :0
+       :0
+        :0
+      :0
+      :0
+       :0
+       :0
+        :0
+        :0
+       :0
+        :0
+        刷新评论:4
+        刷新页面:4
+        返回顶部:4
+        :0
+        :0
+        :0
+        :0
+        :0
+        :0
+           :0
+        :0
+          :0
+         :0
+        :0
+        :0
+         :0
+       :0
+     :0
+      :0
+    :0
+     :0
+     :0
+      :0
+       :0
+       :0
+       公告 :2
+        :0
+       :0
+       :0
+       :0
+        :0
+       :0
+     :0
+      :0
+    :0
+     :0
+     :0
+   :0
+    :0
+    :0
+    :0
+     Copyright ©2018 暖风叔叔 :20
+   :0
+    :0
+  :0
+   :0
+    :0
+   :0
+     :0
+ :0

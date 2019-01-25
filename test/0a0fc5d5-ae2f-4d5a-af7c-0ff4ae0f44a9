@@ -1,0 +1,629 @@
+:0
+ :0
+  :0
+   :0
+    :0
+    :0
+     首页 :2
+     登录 :2
+     JAVA :4
+       :0
+       Java IO 教程 :10
+       Java NIO 教程 :11
+       JAVA Reflection教程 :17
+       Java 网络教程 :9
+       Java并发和多线程 :10
+       Java内存模型指南 :10
+       Java内存模型FAQ :11
+       同步与Java内存模型 :11
+       Oracle官方并发教程 :12
+       JVM性能优化系列 :9
+       JVM实用参数系列 :9
+        :0
+     C++ :3
+     Framework :9
+       :0
+       Disruptor 框架指南 :14
+       Netty :5
+       Scala :5
+       Storm 入门 :8
+       Guava 官方指南 :10
+       Apache Velocity 官方指南 :20
+       Apache Storm 官方文档 :17
+        :0
+     其他译文 :4
+       :0
+       并发基础 :4
+       j.u.c同步框架 :9
+       Fork Join框架 :11
+       Doug Lea 论文 :11
+       Mechanical Sympathy :19
+       软件事务内存导论 :8
+       JSR133中文版 :9
+        :0
+     本站原创 :4
+       :0
+       聊聊并发 :4
+       深入理解Java内存模型 :12
+       从Java视角理解系统结构 :13
+       阿里内贸团队敏捷实践 :10
+        :0
+     并发书籍 :4
+       :0
+       《Java 并发编程的艺术》迷你书 :17
+       《深入理解并行编程》 :10
+       《C++ 并发编程》 :10
+       《Java 7 并发编程指南》 :15
+       《Java 虚拟机并发编程》 :14
+       《Storm入门》中文版 :12
+        :0
+     面试题 :3
+     我的收藏 :4
+     加入我们 :4
+       :0
+       我要投稿 :4
+       内推阿里 :4
+        :0
+     关于本站 :4
+       :0
+       活动 :2
+       文章归档 :4
+       本站作者 :4
+       关于清英 :4
+       广告合作 :4
+        :0
+     :0
+    :0
+    :0
+   并发编程网 - ifeve.com :17
+   让天下没有难学的技术 :10
+   :0
+   :0
+    :0
+     :0
+      :0
+      首页 :2
+      Framework :9
+      如何使用Disruptor（二）如何从Ringbuffer读取 :31
+      :0
+     :0
+     :0
+      :0
+      如何使用Disruptor（二）如何从Ringbuffer读取 :31
+       :0
+        :0
+        :0
+         英文原文：:5
+         http://ifeve.com/dissecting-the-disruptor-how-do-i-read-from-the-ring-buffer/:77
+         :0
+         :0
+        作者：Trisha &nbsp;译者：古圣昌 &nbsp;校对：方腾飞 :35
+        从上一篇文章中我们都了解了什么是Ring Buffer以及它是如何的特别。但遗憾的是，我还没有讲述如何使用Disruptor向Ring Buffer写数据和从Ring&nbsp;Buffer中读取数据。 :101
+         :0
+         :0
+         ConsumerBarrier与消费者 :19
+         :0
+        :0
+         这里我要稍微反过来介绍，因为总的来说读取数据这一过程比写数据要容易理解。假设通过一些“魔法”已经把数据写入到:54
+         Ring Buffer了，怎样从:16
+         Ring Buffer读出这些数据呢？:19
+         :0
+        :0
+         [image]:7
+         :0
+        :0
+       (好，我开始后悔使用Paint/Gimp&nbsp;了。尽管这是个购买绘图板的好借口，如果我继续写下去的话…&nbsp;UML界的权威们大概也在诅咒我的名字了。) :81
+       消费者(Consumer)是一个想从Ring Buffer里读取数据的线程，它可以访问ConsumerBarrier对象——这个对象由RingBuffer创建并且代表消费者与RingBuffer进行交互。就像Ring Buffer显然需要一个序号才能找到下一个可用节点一样，消费者也需要知道它将要处理的序号——每个消费者都需要找到下一个它要访问的序号。在上面的例子中，消费者处理完了Ring Buffer里序号8之前（包括8）的所有数据，那么它期待访问的下一个序号是9。 :235
+       消费者可以调用ConsumerBarrier对象的waitFor()方法，传递它所需要的下一个序号. :50
+        final long availableSeq = consumerBarrier.waitFor(nextSequence); :64
+       ConsumerBarrier返回RingBuffer的最大可访问序号——在上面的例子中是12。ConsumerBarrier有一个WaitStrategy方法来决定它如何等待这个序号，我现在不会去描述它的细节，代码的注释里已经概括了每一种WaitStrategy的优点和缺点 。 :140
+       接下来怎么做？ :7
+       接下来，消费者会一直原地停留，等待更多数据被写入Ring Buffer。并且，一旦数据写入后消费者会收到通知——节点9，10，11和12&nbsp;已写入。现在序号12到了，消费者可以让ConsumerBarrier去拿这些序号节点里的数据了。 :122
+       [image] :7
+       拿到了数据后，消费者(Consumer)会更新自己的标识(cursor)。 :37
+       你应该已经感觉得到，这样做是怎样有助于平缓延迟的峰值了——以前需要逐个节点地询问“我可以拿下一个数据吗？现在可以了么？现在呢？”，消费者(Consumer)现在只需要简单的说“当你拿到的数字比我这个要大的时候请告诉我”，函数返回值会告诉它有多少个新的节点可以读取数据了。因为这些新的节点的确已经写入了数据（Ring Buffer本身的序号已经更新），而且消费者对这些节点的唯一操作是读而不是写，因此访问不用加锁。这太好了，不仅代码实现起来可以更加安全和简单，而且不用加锁使得速度更快。 :242
+       另一个好处是——你可以用多个消费者(Consumer)去读同一个RingBuffer&nbsp;，不需要加锁，也不需要用另外的队列来协调不同的线程(消费者)。这样你可以在Disruptor的协调下实现真正的并发数据处理。 :110
+       BatchConsumer代码是一个消费者的例子。如果你实现了BatchHandler,&nbsp;你可以用BatchConsumer来完成上面我提到的复杂工作。它很容易对付那些需要成批处理的节点（例如上文中要处理的9-12节点）而不用单独地去读取每一个节点。 :130
+       更新：注意Disruptor 2.0版本使用了与本文不一样的命名。如果你对类名感到困惑，请阅读我的变更总结。 :54
+        :0
+        原创文章，转载请注明： 转载自并发编程网 – ifeve.com本文链接地址: 如何使用Disruptor（二）如何从Ringbuffer读取 :71
+        :0
+       [image]  :7
+       :0
+         :0
+         About :5
+         Latest Posts:12
+        :0
+        :0
+         :0
+          :0
+           [image]:7
+          :0
+           :0
+          :0
+          :0
+           古 圣昌:4
+           :0
+           :0
+            BGI 开发工程师:9
+           :0
+           :0
+         :0
+         :0
+          :0
+           [image]:7
+          :0
+           :0
+          :0
+          :0
+           Latest posts by 古 圣昌 (see all):30
+           :0
+             :0
+              多线程的代价 - 2013年3月9日  :18
+              多线程的优点 - 2013年3月7日  :18
+              如何使用Disruptor（二）如何从Ringbuffer读取 - 2013年2月20日 :44
+            :0
+           :0
+           :0
+         :0
+         :0
+       :0
+       [image][image]添加本文到我的收藏:23
+        :0
+        Related posts::14
+         :0
+         并发框架Disruptor译文  :15
+         Dissecting the Disruptor: How do I read from the ring buffer?  :61
+         如何使用 Disruptor（三）写入 Ringbuffer  :30
+         Dissecting the Disruptor: Writing to the ring buffer  :52
+         dissecting-disruptor-wiring-up  :30
+         解析Disruptor的依赖关系  :16
+         Dissecting the Disruptor: What’s so special about a ring buffer?  :64
+         剖析Disruptor:为什么会这么快？(一)锁的缺点  :27
+         Disruptor 2.0 – All Change Please  :33
+         Disruptor(无锁并发框架)-发布  :20
+         并发译文翻译计划（二）  :11
+         Dissecting the Disruptor: Demystifying Memory Barriers  :54
+         Disruptor 2.0更新摘要  :17
+         Dissecting the Disruptor: Why it’s so fast (part one) – Locks Are Bad  :69
+         线程同步工具（七）在并发任务间交换数据  :19
+         :0
+        :0
+      :0
+       :0
+      :0
+      :0
+       :0
+        20 Feb 2013  :11
+        35,853 人阅读 :10
+       古 圣昌 :4
+       Framework:9
+       并发译文 :4
+       :0
+        :0
+         [image][image][image][image][image] (:37
+         11 votes, average: :18
+         3.45 out of 5):14
+         :0
+         :0
+         :0
+         :0
+         :0
+         :0
+         :0
+         :0
+         :0
+         :0
+          :0
+          :0
+           :0
+          :0
+         :0
+         :0
+          :0
+          :0
+          :0
+          :0
+         :0
+        :0
+         [image]Loading...:17
+         :0
+       7 条评论 :5
+       :0
+      :0
+    :0
+     :0
+     :0
+      :0
+       :0
+       发表评论 :4
+       RSS订阅评论 :7
+       :0
+       :0
+       Trackback 关闭 :12
+       评论 (7) :6
+       :0
+     :0
+      :0
+      :0
+       :0
+        :0
+        :0
+         :0
+          :0
+           [image] :7
+            :0
+              方 腾飞   :4
+            2013/03/18 1:19上午 :17
+            :0
+           :0
+           :0
+           登录以回复 :5
+           引用 :2
+           :0
+          :0
+          :0
+          Disruptor的这个设计真不错。消费者不能直接和ringBuffer进行通讯，而必须通过ConsumerBarrier。 :62
+          :0
+         :0
+         :0
+          :0
+           [image] :7
+            :0
+              沙丘01   :4
+            2014/11/08 1:15下午 :17
+            :0
+           :0
+           :0
+           登录以回复 :5
+           引用 :2
+           :0
+          :0
+          :0
+          怎么处理多个消费者不读到同样的数据? :18
+          :0
+         :0
+         :0
+          :0
+           [image] :7
+            :0
+              nkorange   :8
+            2015/12/09 3:29下午 :17
+            :0
+           :0
+           :0
+           登录以回复 :5
+           引用 :2
+           :0
+          :0
+          :0
+          为什么我感觉就是把一个窗口买票改成多个窗口买票？ :24
+          :0
+          :0
+           :0
+            :0
+             [image] :7
+              :0
+                raywill   :7
+              2016/03/24 6:33下午 :17
+              :0
+             :0
+             :0
+             登录以回复 :5
+             引用 :2
+             :0
+            :0
+            :0
+            应该是把争抢跑到多个窗口买票的行为，通过Barrier规范为：所有人先到Barrier处拿号，然后凭号去对应窗口买票。 :59
+            拿号消耗的时间很短，一个Barrier就够；买票消耗时间很长，各个窗口独立服务。 :40
+            :0
+           :0
+         :0
+          :0
+         :0
+         :0
+          :0
+           [image] :7
+            :0
+              raywill   :7
+            2016/03/24 6:30下午 :17
+            :0
+           :0
+           :0
+           登录以回复 :5
+           引用 :2
+           :0
+          :0
+          :0
+          RingBarrier是否可能成为性能瓶颈？它代理了所有其他线程对RingBuffer的访问句柄申请工作。 :53
+          :0
+         :0
+         :0
+          :0
+           [image] :7
+            :0
+              xd2008ck   :8
+            2016/07/19 9:08上午 :17
+            :0
+           :0
+           :0
+           登录以回复 :5
+           引用 :2
+           :0
+          :0
+          :0
+          请教各位大神，SingleProducerSequencer的next(n)方法中有句if条件，第一个条件我看懂了，请问第二个条件cachedGatingSequence &gt; nextValue是什么场景才出现的呢？ :111
+          :0
+          :0
+           :0
+            :0
+             [image] :7
+              :0
+                xd2008ck   :8
+              2016/07/22 3:10下午 :17
+              :0
+             :0
+             :0
+             登录以回复 :5
+             引用 :2
+             :0
+            :0
+            :0
+            好吧。 如果仅从disruptor外部调用，是不会产生nextValue回溯的情况。disruptor内部有一个方法RingBuffer.resetTo()可以，不过这个方法已经被Deprecated了。 :102
+            :0
+           :0
+         :0
+          :0
+         :0
+        :0
+        :0
+      :0
+       :0
+       :0
+        :0
+        :0
+      :0
+       :0
+      :0
+        您必须 :3
+       登陆 后才能发表评论 :10
+       :0
+     :0
+      :0
+     :0
+     :0
+      :0
+      通过Axon和Disruptor处理1M tps :24
+      Disruptor(无锁并发框架)-发布 :20
+      :0
+     :0
+   :0
+    :0
+    :0
+    :0
+     :0
+      :0
+      rss :3
+      :0
+      :0
+       :0
+       :0
+        :0
+        :0
+       :0
+        :0
+        :0
+       :0
+      :0
+     :0
+     :0
+      :0
+        :0
+        :0
+         :0
+        :0
+       :0
+      :0
+      :0
+      :0
+      近期文章 :4
+       :0
+        一次 HashSet 所引起的并发问题  :19
+        《Hyperledger Fabric官方文档》什么是Hyperledger Fabric?  :46
+        实际项目中运用责任链模式  :12
+        代码走查如何保证软件质量  :12
+        《Hyperledger Fabric官方文档》之关键概念翻译邀请  :33
+        微服务集成测试自动化探索  :12
+        《Hyperledger Fabric官方文档》介绍  :26
+        TCP 滑动窗口 与窗口缩放因子(Window Scaling)  :32
+        不可错过的CMS学习笔记  :12
+        白话网络通讯  :6
+        基于redis的分布式锁  :12
+        猫狗队列的再解  :7
+        如何成为一位「不那么差」的程序员  :16
+        消息队列二三事  :7
+        设计一个百万级的消息推送系统  :14
+        《Python3.6官方文档》– 4.更多流程控制语句  :27
+        Java并发编程之美  :10
+        java多线程系列：通过对战游戏学习CyclicBarrier  :31
+        《Python3.6官方文档》14 章  :19
+        源码分析Kafka之Producer  :18
+        容器(docker)中运行java需关注的几个小问题  :26
+        如何优雅的使用和理解线程池  :13
+        《Python3.6官方文档》– 第12章 虚拟环境和包  :28
+        《Python3.6官方文档》– 第13章 接下来  :25
+        HashMap? ConcurrentHashMap? 相信看完这篇没人能难住你！  :41
+        Raft论文读书笔记  :10
+        《Python3.6官方文档》– 第二章 使用python解释器  :32
+        你真的了解延时队列吗(一)  :13
+        MySQL中流式查询使用  :12
+        《Python3.6官方文档》– 第十章  :20
+       :0
+      :0
+      :0
+       :0
+        :0
+         :0
+       [image] :7
+      :0
+      :0
+      :0
+      热门文章 :4
+       :0
+       Google Guava官方教程（中文版） 632,615 人阅读 :33
+       Java NIO系列教程（一） Java NIO 概述 465,680 人阅读 :39
+       Java并发性和多线程介绍目录 337,160 人阅读 :27
+       Java NIO 系列教程 330,701 人阅读 :25
+       Java NIO系列教程（十二） Java NIO与IO 262,878 人阅读 :40
+       Java8初体验（二）Stream语法详解 237,252 人阅读 :33
+       Java NIO系列教程（六） Selector 231,990 人阅读 :36
+       Java NIO系列教程（三） Buffer 229,610 人阅读 :34
+       Java NIO系列教程（二） Channel 224,006 人阅读 :35
+       69道Spring面试题和答案 184,910 人阅读 :27
+       《Storm入门》中文版 183,359 人阅读 :24
+       Netty 5用户指南 177,333 人阅读 :23
+       并发框架Disruptor译文 166,448 人阅读 :27
+       面试题 159,371 人阅读 :15
+       Java 7 并发编程指南中文版 146,247 人阅读 :28
+       Java NIO系列教程（八） SocketChannel 145,502 人阅读 :41
+       [Google Guava] 2.3-强大的集合工具类：ja... 142,676 人阅读 :45
+       [Google Guava] 3-缓存 142,169 人阅读 :31
+       如何创建并运行java线程 135,953 人阅读 :25
+       聊聊并发（三）Java线程池的分析和使用 134,782 人阅读 :32
+       :0
+      :0
+      :0
+       :0
+        :0
+        :0
+      :0
+      :0
+     :0
+     :0
+      :0
+       :0
+       分类目录 :4
+        :0
+        Android (3)  :11
+        Architecture (2)  :16
+        C++ (12)  :8
+        CPU (2)  :7
+        Framework (74) :14
+          :0
+          akka (20)  :9
+           :0
+        GO (6)  :6
+        groovy (6)  :10
+        guava (24)  :10
+        JAVA (918)  :10
+        JVM (47)  :8
+        linux (10)  :10
+        microservices (1)  :17
+        Netty (32)  :10
+        Python (2)  :10
+        react (6)  :9
+        redis (25)  :10
+        Scala (11)  :10
+        spark (19)  :10
+        Spring (23)  :11
+        storm (44)  :10
+        thinking (3)  :12
+        Velocity (10)  :13
+        Web (18)  :8
+        zookeeper (1)  :13
+        公告 (5)  :6
+        区块链 (3)  :7
+        大数据 (35)  :8
+        好文推荐 (34)  :9
+        并发书籍 (97)  :9
+        并发译文 (416)  :10
+        感悟 (5)  :6
+        技术问答 (12)  :9
+        敏捷管理 (6)  :8
+        本站原创 (89)  :9
+        架构 (38)  :7
+        活动 (6)  :6
+        网络 (7)  :6
+        面试 (1)  :6
+        :0
+       :0
+      :0
+      :0
+       :0
+       标签 :2
+       :0
+        actor :5
+        Basic :5
+        classes :7
+        collections :11
+        concurrency :11
+        Concurrent :10
+        concurrent data structure :25
+        ConcurrentHashMap :17
+        Customizing :11
+        Executor :8
+        Executor framework :18
+        faq :3
+        fork :4
+        Fork/Join :9
+        fork join :9
+        Framework :9
+        Functional Programming :22
+        Guava :5
+        IO :2
+        JAVA :4
+        java8 :5
+        jmm :3
+        join :4
+        JVM :3
+        lock :4
+        Memory Barriers :15
+        Netty :5
+        NIO :3
+        OAuth 2.0 :9
+        pattern-matching :16
+        RingBuffer :10
+        Scala :5
+        service mesh :12
+        slf4j :5
+        spark :5
+        spark官方文档 :9
+        stm :3
+        Storm :5
+        synchronization :15
+        Synchronized :12
+        thread :6
+        tomcat :6
+        volatile :8
+        多线程 :3
+        并发译文，Java ，Maven:16
+        :0
+       :0
+      :0
+     :0
+     :0
+      :0
+       :0
+        :0
+         :0
+        :0
+        :0
+      :0
+      :0
+     :0
+    :0
+    :0
+     :0
+     版权所有 ©&nbsp; 并发编程网 – ifeve.com :30
+     ICP号: 浙ICP备12046809号 :20
+      [image]浙公网安备 33010602005873号 :28
+     :0
+    :0
+  :0
+   :0
+  return top                  :10
+   :0
+   :0
+   :0
+  :0
+ :0
