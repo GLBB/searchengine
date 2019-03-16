@@ -10,3 +10,5 @@ analysis1.rar
 html_repo.rar
 searchengine.iml
 testFile.log
+download/src/main/resources/application.yml
+analysis/src/main/resources/application.yml
