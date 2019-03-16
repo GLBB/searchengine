@@ -32,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("ALL")
 @Service
 public class Gather implements Callable<HashMap<String, Integer>> {
 
